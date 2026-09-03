@@ -7,6 +7,7 @@ struct CommandEditorView: View {
     var onDelete: (() -> Void)?
 
     @State private var showingDeleteConfirmation = false
+    @State private var showingResetConfirmation = false
 
     var body: some View {
         Form {
@@ -28,7 +29,17 @@ struct CommandEditorView: View {
                 PreviewDiagram(command: command)
                     .frame(height: 170)
             }
-            if !command.isDefault {
+            if command.isDefault {
+                if command.defaultSeed != nil {
+                    Section("Reset") {
+                        Button {
+                            showingResetConfirmation = true
+                        } label: {
+                            Text("Reset to Default Values…")
+                        }
+                    }
+                }
+            } else {
                 Section("Danger Zone") {
                     Button(role: .destructive) {
                         showingDeleteConfirmation = true
@@ -51,6 +62,28 @@ struct CommandEditorView: View {
         } message: {
             Text("This command and its hotkey will be removed. This cannot be undone.")
         }
+        .confirmationDialog(
+            "Reset \"\(command.name)\" to its default values?",
+            isPresented: $showingResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Reset", role: .destructive) {
+                resetToDefault()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The command's name and geometry will be restored. Your hotkey and menu bar pinning are kept.")
+        }
+    }
+
+    private func resetToDefault() {
+        guard let seed = command.defaultSeed else { return }
+        command.name = seed.name
+        command.width = seed.width
+        command.height = seed.height
+        command.anchor = seed.anchor
+        command.offsetX = seed.offsetX
+        command.offsetY = seed.offsetY
     }
     private func offsetBinding(_ keyPath: WritableKeyPath<WindowCommand, WindowDimension>) -> Binding<WindowDimension?> {
         Binding<WindowDimension?>(

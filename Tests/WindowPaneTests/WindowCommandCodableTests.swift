@@ -127,5 +127,20 @@ enum WindowCommandCodableTests {
             let center = WindowAction.all.first { $0.id == "center" }
             t.check(center?.anchor == .center, "center anchor mismatch")
         }
+
+        t.run("DefaultSeed.resolvesBySeedIDAndName") {
+            var command = WindowCommand(name: "Left Half", width: .percent(10), height: .percent(10), anchor: .center, isDefault: true)
+            t.check(command.defaultSeed?.name == "Left Half", "seed lookup by name fallback failed")
+
+            command.seedID = "Left Half"
+            let seed = command.defaultSeed
+            t.check(seed?.name == "Left Half", "seed lookup by seedID failed")
+
+            let renamed = WindowCommand(name: "Left", width: .percent(10), height: .percent(10), anchor: .center, isDefault: true, seedID: "Left Half")
+            t.check(renamed.defaultSeed?.name == "Left Half", "renamed default should still resolve its seed")
+
+            let custom = WindowCommand(name: "Mine", isDefault: false)
+            t.check(custom.defaultSeed == nil, "customs have no default seed")
+        }
     }
 }

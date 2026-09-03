@@ -138,6 +138,7 @@ public struct WindowCommand: Identifiable, Hashable {
     public var offsetY = WindowDimension.percent(0)
     public var isDefault = false
     public var showInMenuBar = false
+    public var seedID: String?
 
     public init(
         id: UUID = UUID(),
@@ -148,7 +149,8 @@ public struct WindowCommand: Identifiable, Hashable {
         offsetX: WindowDimension = .percent(0),
         offsetY: WindowDimension = .percent(0),
         isDefault: Bool = false,
-        showInMenuBar: Bool = false
+        showInMenuBar: Bool = false,
+        seedID: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -159,6 +161,13 @@ public struct WindowCommand: Identifiable, Hashable {
         self.offsetY = offsetY
         self.isDefault = isDefault
         self.showInMenuBar = showInMenuBar
+        self.seedID = seedID
+    }
+
+    public var defaultSeed: WindowCommand? {
+        guard isDefault else { return nil }
+        let key = seedID ?? name
+        return WindowCommand.seeds.first { $0.name == key }
     }
 }
 
@@ -173,6 +182,7 @@ extension WindowCommand: Codable {
         case offsetY
         case isDefault
         case showInMenuBar
+        case seedID
     }
 
     public init(from decoder: Decoder) throws {
@@ -186,6 +196,7 @@ extension WindowCommand: Codable {
         offsetY = try container.decodeIfPresent(WindowDimension.self, forKey: .offsetY) ?? .percent(0)
         isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
         showInMenuBar = try container.decodeIfPresent(Bool.self, forKey: .showInMenuBar) ?? false
+        seedID = try container.decodeIfPresent(String.self, forKey: .seedID)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -199,6 +210,7 @@ extension WindowCommand: Codable {
         try container.encode(offsetY, forKey: .offsetY)
         try container.encode(isDefault, forKey: .isDefault)
         try container.encode(showInMenuBar, forKey: .showInMenuBar)
+        try container.encodeIfPresent(seedID, forKey: .seedID)
     }
 }
 
@@ -220,7 +232,8 @@ extension WindowCommand {
             offsetX: offsetX,
             offsetY: offsetY,
             isDefault: true,
-            showInMenuBar: showInMenuBar
+            showInMenuBar: showInMenuBar,
+            seedID: name
         )
     }
 
