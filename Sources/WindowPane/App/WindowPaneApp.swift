@@ -13,15 +13,17 @@ struct WindowPaneApp: App {
         }
         .menuBarExtraStyle(.menu)
 
-        Settings {
+        Window("WindowPane Settings", id: "settings") {
             SettingsView()
                 .environmentObject(store)
         }
+        .windowResizability(.contentSize)
     }
 }
 
 struct MenuContent: View {
     @EnvironmentObject private var store: CommandStore
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         if !Accessibility.isTrusted {
@@ -46,19 +48,21 @@ struct MenuContent: View {
         }
         Divider()
         Button("Settings…") {
-            openSettings()
+            openSettingsWindow()
         }
         Button("Quit WindowPane") {
             NSApp.terminate(nil)
         }
     }
-}
 
-func openSettings() {
-    NSApp.activate(ignoringOtherApps: true)
-    for selector in ["showSettingsWindow:", "showPreferencesWindow:"] {
-        if NSApp.sendAction(Selector(selector), to: nil, from: nil) {
-            break
+    private func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "settings")
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.windows
+                .first { $0.title == "WindowPane Settings" }?
+                .makeKeyAndOrderFront(nil)
         }
     }
 }
