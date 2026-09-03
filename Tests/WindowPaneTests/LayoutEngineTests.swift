@@ -95,5 +95,35 @@ enum LayoutEngineTests {
         t.run("LayoutEngine.offsetBeyondScreenIsAllowed") {
             t.check(frame(width: .percent(50), height: .percent(100), anchor: .topLeft, offsetX: .percent(100)).minX == 1000, "offset clamped unexpectedly")
         }
+
+        t.run("LayoutEngine.moveLeftKeepsVerticalPosition") {
+            let current = CGRect(x: 100, y: 200, width: 300, height: 150)
+            let result = frame(width: nil, height: nil, anchor: .moveLeft, current: current)
+            t.check(result == CGRect(x: 0, y: 200, width: 300, height: 150), "got \(result)")
+        }
+
+        t.run("LayoutEngine.moveRightKeepsVerticalPosition") {
+            let current = CGRect(x: 100, y: 200, width: 300, height: 150)
+            let result = frame(width: nil, height: nil, anchor: .moveRight, current: current)
+            t.check(result == CGRect(x: 700, y: 200, width: 300, height: 150), "got \(result)")
+        }
+
+        t.run("LayoutEngine.moveUpKeepsHorizontalPosition") {
+            let current = CGRect(x: 100, y: 200, width: 300, height: 150)
+            let result = frame(width: nil, height: nil, anchor: .moveUp, current: current)
+            t.check(result == CGRect(x: 100, y: 550, width: 300, height: 150), "got \(result)")
+        }
+
+        t.run("LayoutEngine.moveDownKeepsHorizontalPosition") {
+            let current = CGRect(x: 100, y: 200, width: 300, height: 150)
+            let result = frame(width: nil, height: nil, anchor: .moveDown, current: current)
+            t.check(result == CGRect(x: 100, y: 0, width: 300, height: 150), "got \(result)")
+        }
+
+        t.run("LayoutEngine.keepHorizontalWithResizing") {
+            let current = CGRect(x: 100, y: 200, width: 300, height: 150)
+            let result = frame(width: .percent(50), height: nil, anchor: Anchor(horizontal: .keep, vertical: .keep), current: current)
+            t.check(result == CGRect(x: 100, y: 200, width: 500, height: 150), "got \(result)")
+        }
     }
 }

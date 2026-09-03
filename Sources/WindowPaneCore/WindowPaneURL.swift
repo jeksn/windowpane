@@ -29,7 +29,7 @@ public enum WindowPaneURL {
         var command = WindowCommand(name: "Temporary")
 
         if let position = items.first(where: { $0.name.lowercased() == "position" })?.value,
-           let anchor = Anchor(rawValue: position) {
+           let anchor = Anchor.named(position) {
             command.anchor = anchor
         }
 

@@ -39,6 +39,7 @@ public enum LayoutEngine {
         case .left: baseX = area.minX
         case .center: baseX = area.midX - width / 2
         case .right: baseX = area.maxX - width
+        case .keep: baseX = request.currentFrame.minX
         }
 
         let baseY: CGFloat
@@ -46,6 +47,7 @@ public enum LayoutEngine {
         case .top: baseY = area.maxY - height
         case .center: baseY = area.midY - height / 2
         case .bottom: baseY = area.minY
+        case .keep: baseY = request.currentFrame.minY
         }
 
         let x = baseX + resolve(request.offsetX, axisLength: area.width, fallback: 0)

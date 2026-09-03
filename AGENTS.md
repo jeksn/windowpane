@@ -16,8 +16,9 @@ There is no `swift test` workflow: this machine has Command Line Tools only (no 
 
 ## Layout
 
-- `Sources/WindowPaneCore/` — dependency-free logic: `WindowDimension`/`Anchor`/`WindowCommand` models (+ `seeds`), `LayoutEngine` (pure frame math), `FuzzyMatch`, `WindowPaneURL` parsing, `AppSettings`. All public API — consumed by both the app and tests.
-- `Sources/WindowPane/` — app target: AX layer (`Accessibility`, `WindowManipulator`), `CommandApplier` (+ `RestoreStore`), `CommandStore` (JSON at `~/Library/Application Support/WindowPane/commands.json`), `HotkeyManager`, menu bar + settings UI, `PickerController`/`PickerView` (Spotlight-style overlay), `HUD` feedback, `URLDispatcher`.
+- `Sources/WindowPaneCore/` — dependency-free logic: `WindowDimension`, `Anchor` (two-axis struct with per-axis `keep` for move-style commands; decodes legacy flat strings like `"topLeft"`), `WindowCommand` (+ `seeds`, + `migratingLegacyCommands`), `LayoutEngine` (pure frame math), `FuzzyMatch`, `WindowPaneURL` parsing, `AppSettings`. All public API — consumed by both the app and tests.
+- `Sources/WindowPane/` — app target: AX layer (`Accessibility`, `WindowManipulator`), `CommandApplier` (+ `RestoreStore`), `CommandStore` (versioned JSON at `~/Library/Application Support/WindowPane/commands.json`; v2 = `{version, commands}`, legacy bare arrays migrate via `WindowCommand.migratingLegacyCommands`, which preserves IDs of name-matched commands so hotkeys survive), `HotkeyManager`, menu bar + settings UI, `PickerController`/`PickerView` (Spotlight-style overlay), `HUD` feedback, `URLDispatcher`.
+- Commands carry `isDefault` (seeds; sidebar "Defaults" section, restorable via `restoreDefaults()`) and `showInMenuBar` (menu bar only lists pinned commands; toggle in the editor, indicator in the sidebar). New custom commands are pinned by default.
 - `Tests/WindowPaneTests/` — custom harness (`TestRunner` + suite files + `main.swift`).
 
 ## Notes / gotchas

@@ -33,7 +33,12 @@ struct MenuContent: View {
             Divider()
         }
 
-        ForEach(store.commands) { command in
+        if store.pinnedCommands.isEmpty {
+            Button("No pinned commands — choose in Settings…") {
+                openSettingsWindow()
+            }
+        }
+        ForEach(store.pinnedCommands) { command in
             Button(command.name.isEmpty ? "Untitled" : command.name) {
                 CommandApplier.shared.apply(command)
             }

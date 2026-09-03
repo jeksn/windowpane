@@ -1,6 +1,6 @@
-import WindowPaneCore
 import SwiftUI
 import KeyboardShortcuts
+import WindowPaneCore
 
 struct CommandListView: View {
     @EnvironmentObject private var store: CommandStore
@@ -36,19 +36,27 @@ struct CommandListView: View {
                 .padding(.vertical, 8)
 
                 List(selection: $selectionID) {
-                    ForEach(store.commands) { command in
+                    Section {
+                        ForEach(store.defaultCommands) { command in
+                            row(for: command)
+                        }
+                    } header: {
                         HStack {
-                            Text(command.name.isEmpty ? "Untitled" : command.name)
-                                .lineLimit(1)
+                            Text("Defaults")
                             Spacer()
-                            if let shortcut = KeyboardShortcuts.getShortcut(for: HotkeyManager.name(for: command.id)) {
-                                Text(shortcut.description)
-                                    .font(.system(size: 11, design: .monospaced))
-                                    .foregroundStyle(.secondary)
+                            Button("Restore Defaults") {
+                                store.restoreDefaults()
                             }
+                            .buttonStyle(.borderless)
+                            .font(.caption)
                         }
                     }
-                    .onMove { store.move(from: $0, to: $1) }
+                    Section("Custom") {
+                        ForEach(store.customCommands) { command in
+                            row(for: command)
+                        }
+                        .onMove { store.moveCustom(from: $0, to: $1) }
+                    }
                 }
                 .listStyle(.sidebar)
             }
@@ -66,8 +74,30 @@ struct CommandListView: View {
         }
     }
 
+    private func row(for command: WindowCommand) -> some View {
+        HStack {
+            Text(command.name.isEmpty ? "Untitled" : command.name)
+                .lineLimit(1)
+            Spacer()
+            if command.showInMenuBar {
+                Image(systemName: "menubar.dock.rectangle")
+                    .foregroundStyle(.secondary)
+                    .help("Shown in menu bar")
+            }
+            if let shortcut = KeyboardShortcuts.getShortcut(for: HotkeyManager.name(for: command.id)) {
+                Text(shortcutDescription(shortcut))
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func shortcutDescription(_ shortcut: KeyboardShortcuts.Shortcut) -> String {
+        shortcut.description
+    }
+
     private func addCommand() {
-        var counter = store.commands.count + 1
+        var counter = store.customCommands.count + 1
         var name = "New Command"
         while store.commands.contains(where: { $0.name == name }) {
             counter += 1

@@ -10,6 +10,7 @@ struct CommandEditorView: View {
             Section("General") {
                 TextField("Name", text: $command.name)
                 KeyboardShortcuts.Recorder("Hotkey:", name: HotkeyManager.name(for: command.id))
+                Toggle("Show in Menu Bar", isOn: $command.showInMenuBar)
             }
             Section("Size") {
                 DimensionField(label: "Width", dimension: $command.width, allowsKeep: true)
@@ -114,34 +115,51 @@ struct DimensionField: View {
 struct AnchorPickerView: View {
     @Binding var anchor: WindowPaneCore.Anchor
 
-    private var rows: [[WindowPaneCore.Anchor]] {
-        [
-            [.topLeft, .topCenter, .topRight],
-            [.middleLeft, .center, .middleRight],
-            [.bottomLeft, .bottomCenter, .bottomRight]
-        ]
-    }
-
     var body: some View {
-        HStack {
-            Text("Anchor")
-            Spacer()
-            VStack(spacing: 3) {
-                ForEach(rows, id: \.self) { row in
-                    HStack(spacing: 3) {
-                        ForEach(row, id: \.self) { cell in
-                            Button {
-                                anchor = cell
-                            } label: {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(anchor == cell ? Color.accentColor : Color.secondary.opacity(0.25))
-                                    .frame(width: 28, height: 18)
-                            }
-                            .buttonStyle(.plain)
-                        }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Horizontal")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("Horizontal", selection: $anchor.horizontal) {
+                    ForEach(WindowPaneCore.Anchor.Horizontal.allCases, id: \.self) { value in
+                        Text(horizontalLabel(value)).tag(value)
                     }
                 }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 260)
             }
+            HStack {
+                Text("Vertical")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("Vertical", selection: $anchor.vertical) {
+                    ForEach(WindowPaneCore.Anchor.Vertical.allCases, id: \.self) { value in
+                        Text(verticalLabel(value)).tag(value)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 240)
+            }
+        }
+    }
+
+    private func horizontalLabel(_ value: WindowPaneCore.Anchor.Horizontal) -> String {
+        switch value {
+        case .left: return "Left"
+        case .center: return "Center"
+        case .right: return "Right"
+        case .keep: return "Keep"
+        }
+    }
+
+    private func verticalLabel(_ value: WindowPaneCore.Anchor.Vertical) -> String {
+        switch value {
+        case .top: return "Top"
+        case .center: return "Center"
+        case .bottom: return "Bottom"
+        case .keep: return "Keep"
         }
     }
 }

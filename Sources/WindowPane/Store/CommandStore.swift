@@ -1,9 +1,14 @@
-import WindowPaneCore
 import Foundation
 import SwiftUI
+import WindowPaneCore
 import KeyboardShortcuts
 
 final class CommandStore: ObservableObject {
+    private struct StoredCommands: Codable {
+        var version: Int
+        var commands: [WindowCommand]
+    }
+
     static let shared = CommandStore()
 
     @Published private(set) var commands: [WindowCommand]
@@ -17,6 +22,18 @@ final class CommandStore: ObservableObject {
         }
     }
 
+    var defaultCommands: [WindowCommand] {
+        commands.filter(\.isDefault)
+    }
+
+    var customCommands: [WindowCommand] {
+        commands.filter { !$0.isDefault }
+    }
+
+    var pinnedCommands: [WindowCommand] {
+        commands.filter(\.showInMenuBar)
+    }
+
     func command(withID id: UUID) -> WindowCommand? {
         commands.first { $0.id == id }
     }
@@ -26,9 +43,12 @@ final class CommandStore: ObservableObject {
     }
 
     func add(_ command: WindowCommand) {
-        commands.append(command)
+        var newCommand = command
+        newCommand.isDefault = false
+        newCommand.showInMenuBar = true
+        commands.append(newCommand)
         save()
-        HotkeyManager.shared.register(command)
+        HotkeyManager.shared.register(newCommand)
     }
 
     func update(_ command: WindowCommand) {
@@ -42,8 +62,13 @@ final class CommandStore: ObservableObject {
         var copy = command
         copy.id = UUID()
         copy.name = uniqueName(basedOn: command.name)
+        copy.isDefault = false
         if let index = commands.firstIndex(where: { $0.id == command.id }) {
-            commands.insert(copy, at: index + 1)
+            if command.isDefault, let customStart = commands.firstIndex(where: { !$0.isDefault }) {
+                commands.insert(copy, at: customStart)
+            } else {
+                commands.insert(copy, at: index + 1)
+            }
         } else {
             commands.append(copy)
         }
@@ -58,8 +83,20 @@ final class CommandStore: ObservableObject {
         save()
     }
 
-    func move(from source: IndexSet, to destination: Int) {
-        commands.move(fromOffsets: source, toOffset: destination)
+    func restoreDefaults() {
+        let existingNames = Set(commands.map(\.name))
+        let missing = WindowCommand.seeds.filter { !existingNames.contains($0.name) }
+        guard !missing.isEmpty else { return }
+        let insertIndex = commands.firstIndex(where: { !$0.isDefault }) ?? commands.count
+        commands.insert(contentsOf: missing, at: insertIndex)
+        save()
+        missing.forEach { HotkeyManager.shared.register($0) }
+    }
+
+    func moveCustom(from source: IndexSet, to destination: Int) {
+        guard let customStart = commands.firstIndex(where: { !$0.isDefault }) else { return }
+        let fullSource = IndexSet(source.map { $0 + customStart })
+        commands.move(fromOffsets: fullSource, toOffset: destination + customStart)
         save()
     }
 
@@ -94,13 +131,21 @@ final class CommandStore: ObservableObject {
 
     private static func load() -> [WindowCommand]? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? JSONDecoder().decode([WindowCommand].self, from: data)
+        if let stored = try? JSONDecoder().decode(StoredCommands.self, from: data) {
+            return stored.commands
+        }
+        if let legacy = try? JSONDecoder().decode([WindowCommand].self, from: data) {
+            let migrated = WindowCommand.migratingLegacyCommands(legacy)
+            save(migrated)
+            return migrated
+        }
+        return nil
     }
 
     private static func save(_ commands: [WindowCommand]) {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(commands) else { return }
+        guard let data = try? encoder.encode(StoredCommands(version: 2, commands: commands)) else { return }
         try? data.write(to: fileURL, options: .atomic)
     }
 }
