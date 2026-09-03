@@ -74,6 +74,20 @@ open "windowpane://command?position=center&relativeWidth=0.5&relativeHeight=0.5"
 Scripts/update.sh   # release build → install to /Applications → relaunch
 ```
 
+## Icons
+
+Drop the two source files into `Resources/` and rebuild:
+
+| File | Purpose | Notes |
+| --- | --- | --- |
+| `Resources/AppIconSource.png` | App icon (Finder, Dock, Activity Monitor) | 1024×1024 PNG recommended |
+| `Resources/MenuBarIcon.png` | Menu bar icon | Small monochrome PNG; rendered as a template image so it adapts to light/dark menu bars |
+
+```bash
+Scripts/make_icons.sh   # AppIconSource.png → Resources/AppIcon.icns
+Scripts/update.sh
+```
+
 ## How it works
 
 - The usable area is the screen's `visibleFrame` inset by the edge gap; the anchor pins the window to it, offsets shift the frame, and % sizes are relative to that area

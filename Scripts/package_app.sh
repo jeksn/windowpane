@@ -22,6 +22,10 @@ if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
   ICON_KEY="  <key>CFBundleIconFile</key><string>AppIcon</string>"
 fi
 
+if [[ -f "$ROOT/Resources/MenuBarIcon.png" ]]; then
+  cp "$ROOT/Resources/MenuBarIcon.png" "$APP_BUNDLE/Contents/Resources/"
+fi
+
 cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

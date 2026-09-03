@@ -7,9 +7,11 @@ struct WindowPaneApp: App {
     @StateObject private var store = CommandStore.shared
 
     var body: some Scene {
-        MenuBarExtra("WindowPane", systemImage: "rectangle.split.3x3") {
+        MenuBarExtra {
             MenuContent()
                 .environmentObject(store)
+        } label: {
+            Image(nsImage: StatusBarIcon.image)
         }
         .menuBarExtraStyle(.menu)
 
