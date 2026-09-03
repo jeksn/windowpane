@@ -74,6 +74,18 @@ enum WindowManipulator {
 
     @discardableResult
     static func setFrame(_ ref: WindowRef, to frame: CGRect) -> AXError? {
+        var lastSetError: AXError?
+        for _ in 0..<5 {
+            lastSetError = applyFrame(ref, to: frame)
+            if lastSetError == nil, let current = Self.frame(of: ref.window), isClose(current, frame) {
+                return nil
+            }
+            usleep(60_000)
+        }
+        return lastSetError
+    }
+
+    private static func applyFrame(_ ref: WindowRef, to frame: CGRect) -> AXError? {
         var size = CGSize(width: frame.width, height: frame.height)
         var point = axTopLeft(fromCocoaOrigin: frame.origin, height: frame.height)
         guard
@@ -87,6 +99,13 @@ enum WindowManipulator {
         let positionError = AXUIElementSetAttributeValue(ref.window, kAXPositionAttribute as CFString, pointValue)
         guard positionError == .success else { return positionError }
         return nil
+    }
+
+    private static func isClose(_ a: CGRect, _ b: CGRect) -> Bool {
+        abs(a.minX - b.minX) <= 1
+            && abs(a.minY - b.minY) <= 1
+            && abs(a.width - b.width) <= 1
+            && abs(a.height - b.height) <= 1
     }
 
     static func screen(containing frame: CGRect) -> NSScreen? {
