@@ -39,8 +39,6 @@ final class CommandApplier {
 
         if let error = WindowManipulator.setFrame(target, to: newFrame) {
             HUD.show("Could not resize window (\(error.rawValue))")
-        } else {
-            HUD.show(command.name.isEmpty ? "Applied" : "Applied: \(command.name)")
         }
     }
 
@@ -66,8 +64,6 @@ final class CommandApplier {
 
         if let error = WindowManipulator.setFrame(target, to: previousFrame) {
             HUD.show("Could not restore window (\(error.rawValue))")
-        } else {
-            HUD.show("Restored")
         }
     }
 }
