@@ -93,11 +93,17 @@ enum UpdateChecker {
                 try? FileManager.default.removeItem(at: dmgDestination)
                 try FileManager.default.moveItem(at: downloaded, to: dmgDestination)
 
-                HUD.show("Installing update…")
+                await MainActor.run {
+                    HUD.show("Installing update…")
+                }
                 try install(dmg: dmgDestination)
-                relaunch()
+                await MainActor.run {
+                    relaunch()
+                }
             } catch {
-                HUD.show("Update failed: \(error.localizedDescription)")
+                await MainActor.run {
+                    HUD.show("Update failed: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -124,7 +130,10 @@ enum UpdateChecker {
     }
 
     private static func relaunch() {
-        _ = try? run("/bin/bash", ["-c", "sleep 1; pkill -x WindowPane; sleep 0.5; open /Applications/WindowPane.app"])
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = ["-c", "sleep 1; pkill -x WindowPane; sleep 0.5; open /Applications/WindowPane.app"]
+        try? process.run()
         NSApp.terminate(nil)
     }
 
