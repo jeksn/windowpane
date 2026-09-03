@@ -51,13 +51,19 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-SIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
+SIGN_IDENTITY="${CODESIGN_IDENTITY:-}"
+if [[ -z "$SIGN_IDENTITY" && -f "$ROOT/Scripts/codesign-identity" ]]; then
+  SIGN_IDENTITY="$(head -n 1 "$ROOT/Scripts/codesign-identity" | xargs)"
+fi
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  SIGN_IDENTITY="-"
+fi
 codesign --force --sign "$SIGN_IDENTITY" "$APP_BUNDLE"
 if [[ "$SIGN_IDENTITY" == "-" ]]; then
   echo "Built $APP_BUNDLE (ad-hoc signed)"
   echo "Note: ad-hoc signatures change on every rebuild, which invalidates the macOS"
-  echo "Accessibility grant. Use a self-signed identity for stable permissions:"
-  echo "  CODESIGN_IDENTITY=\"Your Cert Name\" Scripts/package_app.sh"
+  echo "Accessibility grant. For stable permissions, create a self-signed Code Signing"
+  echo "certificate and put its name in Scripts/codesign-identity (or export CODESIGN_IDENTITY)."
 else
   echo "Built $APP_BUNDLE (signed with \"$SIGN_IDENTITY\")"
 fi

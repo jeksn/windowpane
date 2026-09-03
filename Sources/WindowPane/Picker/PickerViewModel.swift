@@ -1,5 +1,14 @@
-import WindowPaneCore
 import Foundation
+import KeyboardShortcuts
+import WindowPaneCore
+
+struct PickerItem: Identifiable {
+    let title: String
+    let hotkeyName: KeyboardShortcuts.Name
+    let command: WindowCommand
+
+    var id: String { hotkeyName.rawValue }
+}
 
 final class PickerViewModel: ObservableObject {
     @Published var query = "" {
@@ -8,7 +17,7 @@ final class PickerViewModel: ObservableObject {
     @Published var selectedIndex = 0
     @Published var focusToken = UUID()
 
-    var commands: [WindowCommand] = []
+    var items: [PickerItem] = []
 
     func reset() {
         query = ""
@@ -16,8 +25,8 @@ final class PickerViewModel: ObservableObject {
         focusToken = UUID()
     }
 
-    var filtered: [WindowCommand] {
-        FuzzyMatch.ranked(commands, query: query) { $0.name }
+    var filtered: [PickerItem] {
+        FuzzyMatch.ranked(items, query: query) { $0.title }
     }
 
     func moveSelection(_ delta: Int) {
@@ -26,7 +35,7 @@ final class PickerViewModel: ObservableObject {
         selectedIndex = (selectedIndex + delta + count) % count
     }
 
-    func selectedCommand() -> WindowCommand? {
+    func selectedItem() -> PickerItem? {
         filtered[safe: selectedIndex]
     }
 }

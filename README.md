@@ -47,6 +47,8 @@ source ~/.zshrc
 Scripts/update.sh
 ```
 
+Alternatively, put the certificate name in `Scripts/codesign-identity` (git-ignored) — the build script picks it up automatically.
+
 Re-grant Accessibility one last time — after that, rebuilds keep the permission.
 
 ## Usage
@@ -54,7 +56,7 @@ Re-grant Accessibility one last time — after that, rebuilds keep the permissio
 - **Menu bar icon** — lists the commands you've pinned (toggle per command in Settings)
 - **Quick Picker** — fuzzy-search all commands; ↑↓ to navigate, Return to apply, Esc to close
 - **Settings → Commands** — add, duplicate, delete, and edit commands: name, hotkey, size, anchor, offsets, pinning, with a live preview of the resulting frame
-- **Settings → General** — edge gap, picker/restore hotkeys, launch at login, Accessibility status
+- **Settings → General** — edge gap, picker/restore hotkeys, **actions** (Center, Move Left/Right/Up/Down — parameterless, size-preserving), launch at login, Accessibility status
 
 ### URL scheme
 

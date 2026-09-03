@@ -3,3 +3,4 @@ WindowPane.app/
 *.xcodeproj
 .DS_Store
 .swiftpm
+Scripts/codesign-identity

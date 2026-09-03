@@ -20,12 +20,30 @@ final class PickerController: NSObject, NSWindowDelegate {
 
     func show() {
         target = WindowManipulator.frontmostWindow()
-        viewModel.commands = CommandStore.shared.commands
+        viewModel.items = makeItems()
         viewModel.reset()
 
         let panel = ensurePanel()
         position(panel)
         panel.makeKeyAndOrderFront(nil)
+    }
+
+    private func makeItems() -> [PickerItem] {
+        var items = CommandStore.shared.commands.map { command in
+            PickerItem(
+                title: command.name,
+                hotkeyName: HotkeyManager.name(for: command.id),
+                command: command
+            )
+        }
+        items.append(contentsOf: WindowAction.all.map { action in
+            PickerItem(
+                title: action.name,
+                hotkeyName: HotkeyManager.actionName(action.id),
+                command: action.command
+            )
+        })
+        return items
     }
 
     func close() {
@@ -89,8 +107,8 @@ final class PickerController: NSObject, NSWindowDelegate {
                 self.viewModel.moveSelection(-1)
                 return nil
             case 36, 76:
-                if let command = self.viewModel.selectedCommand() {
-                    self.apply(command)
+                if let item = self.viewModel.selectedItem() {
+                    self.apply(item.command)
                 }
                 return nil
             case 53:

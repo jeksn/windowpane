@@ -24,6 +24,9 @@ final class HotkeyManager {
         KeyboardShortcuts.onKeyUp(for: Self.openPicker) {
             PickerController.shared.toggle()
         }
+        for action in WindowAction.all {
+            register(action)
+        }
     }
 
     func register(_ command: WindowCommand) {
@@ -37,7 +40,17 @@ final class HotkeyManager {
         }
     }
 
+    private func register(_ action: WindowAction) {
+        KeyboardShortcuts.onKeyUp(for: Self.actionName(action.id)) {
+            CommandApplier.shared.apply(action.command)
+        }
+    }
+
     static func name(for id: UUID) -> KeyboardShortcuts.Name {
         KeyboardShortcuts.Name("command.\(id.uuidString)")
+    }
+
+    static func actionName(_ actionID: String) -> KeyboardShortcuts.Name {
+        KeyboardShortcuts.Name("action.\(actionID)")
     }
 }

@@ -31,17 +31,17 @@ struct PickerView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(Array(viewModel.filtered.enumerated()), id: \.element.id) { index, command in
-                                PickerRowView(command: command, isSelected: index == viewModel.selectedIndex)
-                                    .id(command.id)
-                                    .onTapGesture { onSelect(command) }
+                            ForEach(viewModel.filtered) { item in
+                                PickerRowView(item: item, isSelected: item.id == viewModel.filtered[safe: viewModel.selectedIndex]?.id)
+                                    .id(item.id)
+                                    .onTapGesture { onSelect(item.command) }
                             }
                         }
                         .padding(.vertical, 4)
                     }
                     .onChange(of: viewModel.selectedIndex) { index in
-                        if let command = viewModel.filtered[safe: index] {
-                            proxy.scrollTo(command.id, anchor: .center)
+                        if let item = viewModel.filtered[safe: index] {
+                            proxy.scrollTo(item.id, anchor: .center)
                         }
                     }
                 }
@@ -56,17 +56,17 @@ struct PickerView: View {
 }
 
 struct PickerRowView: View {
-    let command: WindowCommand
+    let item: PickerItem
     let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "macwindow")
                 .foregroundStyle(.secondary)
-            Text(command.name.isEmpty ? "Untitled" : command.name)
+            Text(item.title.isEmpty ? "Untitled" : item.title)
                 .lineLimit(1)
             Spacer()
-            if let shortcut = KeyboardShortcuts.getShortcut(for: HotkeyManager.name(for: command.id)) {
+            if let shortcut = KeyboardShortcuts.getShortcut(for: item.hotkeyName) {
                 Text(shortcut.description)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(.secondary)

@@ -87,13 +87,13 @@ enum WindowCommandCodableTests {
                 WindowCommand(name: "Maximize", width: .percent(100), height: .percent(100), anchor: .topLeft)
             ]
 
-            let migrated = WindowCommand.migratingLegacyCommands(legacy)
-            t.check(migrated.count == WindowCommand.seeds.count, "expected full seed set, got \(migrated.count)")
-            t.check(migrated.allSatisfy(\.isDefault), "all migrated commands should be defaults")
-            let leftHalf = migrated.first { $0.name == "Left Half" }
+            let result = WindowCommand.migratingLegacyCommands(legacy)
+            t.check(result.commands.count == WindowCommand.seeds.count, "expected full seed set, got \(result.commands.count)")
+            t.check(result.commands.allSatisfy(\.isDefault), "all migrated commands should be defaults")
+            let leftHalf = result.commands.first { $0.name == "Left Half" }
             t.check(leftHalf?.id == legacyID, "hotkey-bound id should be preserved")
-            let center = migrated.first { $0.name == "Center" }
-            t.check(center?.width == nil, "Center should adopt keep-size geometry")
+            t.check(result.commands.first { $0.name == "Center" } == nil, "Center should become an action, not a command")
+            t.check(result.droppedActionIDs["center"] != nil, "Center should be reported as a dropped action")
         }
 
         t.run("Migration.legacyCustomCommandsArePreserved") {
@@ -102,12 +102,30 @@ enum WindowCommandCodableTests {
                 WindowCommand(name: "My Custom", width: .points(500), height: nil, anchor: .middleLeft)
             ]
 
-            let migrated = WindowCommand.migratingLegacyCommands(legacy)
-            let custom = migrated.first { $0.name == "My Custom" }
+            let result = WindowCommand.migratingLegacyCommands(legacy)
+            let custom = result.commands.first { $0.name == "My Custom" }
             t.check(custom != nil, "custom command should survive")
             t.check(custom?.isDefault == false, "custom should stay custom")
             t.check(custom?.showInMenuBar == true, "custom should be pinned to menu bar")
-            t.check(migrated.contains { $0.name == "Maximize" }, "missing defaults should be added")
+            t.check(result.commands.contains { $0.name == "Maximize" }, "missing defaults should be added")
+        }
+
+        t.run("Migration.legacyMoveCommandsBecomeActions") {
+            let moveID = UUID()
+            let legacy: [WindowCommand] = [
+                WindowCommand(id: moveID, name: "Move Left", width: nil, height: nil, anchor: .moveLeft)
+            ]
+
+            let result = WindowCommand.migratingLegacyCommands(legacy)
+            t.check(result.commands.first { $0.name == "Move Left" } == nil, "move commands should be dropped from the command list")
+            t.check(result.droppedActionIDs["moveLeft"] == moveID, "move hotkey id should be reported for remapping")
+        }
+
+        t.run("Actions.fixedList") {
+            t.check(WindowAction.all.count == 5, "expected 5 actions")
+            t.check(WindowAction.all.allSatisfy({ $0.command.width == nil && $0.command.height == nil }), "actions should keep window size")
+            let center = WindowAction.all.first { $0.id == "center" }
+            t.check(center?.anchor == .center, "center anchor mismatch")
         }
     }
 }

@@ -133,20 +133,50 @@ final class CommandStore: ObservableObject {
     private static func load() -> [WindowCommand]? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
         if let stored = try? JSONDecoder().decode(StoredCommands.self, from: data) {
-            return stored.commands
+            if stored.version >= 3 {
+                return stored.commands
+            }
+            let (commands, droppedActionIDs) = migrateActionCommands(stored.commands)
+            remapActionHotkeys(droppedActionIDs)
+            save(commands)
+            return commands
         }
         if let legacy = try? JSONDecoder().decode([WindowCommand].self, from: data) {
-            let migrated = WindowCommand.migratingLegacyCommands(legacy)
-            save(migrated)
-            return migrated
+            let result = WindowCommand.migratingLegacyCommands(legacy)
+            remapActionHotkeys(result.droppedActionIDs)
+            save(result.commands)
+            return result.commands
         }
         return nil
+    }
+
+    private static func migrateActionCommands(_ commands: [WindowCommand]) -> ([WindowCommand], [String: UUID]) {
+        var droppedActionIDs = [String: UUID]()
+        var kept: [WindowCommand] = []
+        for command in commands {
+            if let action = WindowAction.all.first(where: { $0.name == command.name }) {
+                droppedActionIDs[action.id] = command.id
+            } else {
+                kept.append(command)
+            }
+        }
+        return (kept, droppedActionIDs)
+    }
+
+    private static func remapActionHotkeys(_ droppedActionIDs: [String: UUID]) {
+        for (actionID, oldCommandID) in droppedActionIDs {
+            let oldName = HotkeyManager.name(for: oldCommandID)
+            guard let shortcut = KeyboardShortcuts.getShortcut(for: oldName) else { continue }
+            let newName = HotkeyManager.actionName(actionID)
+            KeyboardShortcuts.setShortcut(shortcut, for: newName)
+            KeyboardShortcuts.setShortcut(nil, for: oldName)
+        }
     }
 
     private static func save(_ commands: [WindowCommand]) {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(StoredCommands(version: 2, commands: commands)) else { return }
+        guard let data = try? encoder.encode(StoredCommands(version: 3, commands: commands)) else { return }
         try? data.write(to: fileURL, options: .atomic)
     }
 }

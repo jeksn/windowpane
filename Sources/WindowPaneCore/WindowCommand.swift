@@ -251,20 +251,30 @@ extension WindowCommand {
         seed("Maximize", width: .percent(100), height: .percent(100), anchor: .topLeft, showInMenuBar: true),
         seed("Maximize Height", width: nil, height: .percent(100), anchor: Anchor(horizontal: .keep, vertical: .top)),
         seed("Maximize Width", width: .percent(100), height: nil, anchor: Anchor(horizontal: .left, vertical: .keep)),
-        seed("Center", width: nil, height: nil, anchor: .center, showInMenuBar: true),
-        seed("Reasonable Size", width: .percent(60), height: .percent(60), anchor: .center),
-        seed("Move Left", width: nil, height: nil, anchor: .moveLeft),
-        seed("Move Right", width: nil, height: nil, anchor: .moveRight),
-        seed("Move Up", width: nil, height: nil, anchor: .moveUp),
-        seed("Move Down", width: nil, height: nil, anchor: .moveDown)
+        seed("Reasonable Size", width: .percent(60), height: .percent(60), anchor: .center)
     ]
+}
 
-    public static func migratingLegacyCommands(_ legacy: [WindowCommand]) -> [WindowCommand] {
+public struct LegacyMigrationResult {
+    public let commands: [WindowCommand]
+    public let droppedActionIDs: [String: UUID]
+
+    init(commands: [WindowCommand], droppedActionIDs: [String: UUID]) {
+        self.commands = commands
+        self.droppedActionIDs = droppedActionIDs
+    }
+}
+
+extension WindowCommand {
+    public static func migratingLegacyCommands(_ legacy: [WindowCommand]) -> LegacyMigrationResult {
         var preservedIDsByName = [String: UUID]()
+        var droppedActionIDs = [String: UUID]()
         var customs: [WindowCommand] = []
 
         for command in legacy {
-            if seeds.contains(where: { $0.name == command.name }) {
+            if let action = WindowAction.all.first(where: { $0.name == command.name }) {
+                droppedActionIDs[action.id] = command.id
+            } else if seeds.contains(where: { $0.name == command.name }) {
                 preservedIDsByName[command.name] = command.id
             } else {
                 var custom = command
@@ -282,6 +292,32 @@ extension WindowCommand {
             return migrated
         }
 
-        return defaults + customs
+        return LegacyMigrationResult(commands: defaults + customs, droppedActionIDs: droppedActionIDs)
     }
+}
+
+public struct WindowAction: Identifiable, Hashable {
+    public let id: String
+    public let name: String
+    public let anchor: Anchor
+    public let commandID: UUID
+
+    public init(id: String, name: String, anchor: Anchor, commandID: UUID) {
+        self.id = id
+        self.name = name
+        self.anchor = anchor
+        self.commandID = commandID
+    }
+
+    public var command: WindowCommand {
+        WindowCommand(id: commandID, name: name, width: nil, height: nil, anchor: anchor)
+    }
+
+    public static let all: [WindowAction] = [
+        WindowAction(id: "center", name: "Center", anchor: .center, commandID: UUID(uuidString: "A1000000-0000-4000-8000-0000000000A1")!),
+        WindowAction(id: "moveLeft", name: "Move Left", anchor: .moveLeft, commandID: UUID(uuidString: "A1000000-0000-4000-8000-0000000000A2")!),
+        WindowAction(id: "moveRight", name: "Move Right", anchor: .moveRight, commandID: UUID(uuidString: "A1000000-0000-4000-8000-0000000000A3")!),
+        WindowAction(id: "moveUp", name: "Move Up", anchor: .moveUp, commandID: UUID(uuidString: "A1000000-0000-4000-8000-0000000000A4")!),
+        WindowAction(id: "moveDown", name: "Move Down", anchor: .moveDown, commandID: UUID(uuidString: "A1000000-0000-4000-8000-0000000000A5")!)
+    ]
 }

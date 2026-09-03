@@ -25,6 +25,15 @@ struct GeneralSettingsView: View {
                 KeyboardShortcuts.Recorder("Quick Picker:", name: HotkeyManager.openPicker)
                 KeyboardShortcuts.Recorder("Restore Previous Size:", name: HotkeyManager.restore)
             }
+            Section {
+                ForEach(WindowAction.all) { action in
+                    KeyboardShortcuts.Recorder("\(action.name):", name: HotkeyManager.actionName(action.id))
+                }
+            } header: {
+                Text("Actions")
+            } footer: {
+                Text("Parameterless actions — they keep the window's size and only change its position. Also available in the Quick Picker.")
+            }
             Section("System") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { enabled in
