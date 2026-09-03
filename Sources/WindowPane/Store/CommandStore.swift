@@ -78,6 +78,7 @@ final class CommandStore: ObservableObject {
     }
 
     func remove(_ command: WindowCommand) {
+        guard !command.isDefault else { return }
         commands.removeAll { $0.id == command.id }
         KeyboardShortcuts.setShortcut(nil, for: HotkeyManager.name(for: command.id))
         save()

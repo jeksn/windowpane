@@ -34,32 +34,30 @@ struct CommandListView: View {
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
             .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Button {
-                        addCommand()
-                    } label: {
-                        Image(systemName: "plus")
+                ToolbarItem {
+                    HStack(spacing: 8) {
+                        Button {
+                            addCommand()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .help("Add command")
+                        Button {
+                            duplicateSelection()
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                        }
+                        .disabled(selectionID == nil)
+                        .help("Duplicate command")
                     }
-                    .help("Add command")
-                    Button {
-                        duplicateSelection()
-                    } label: {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .disabled(selectionID == nil)
-                    .help("Duplicate command")
-                    Button {
-                        removeSelection()
-                    } label: {
-                        Image(systemName: "minus")
-                    }
-                    .disabled(selectionID == nil)
-                    .help("Delete command")
                 }
             }
         } detail: {
             if let selectionID, let binding = store.binding(for: selectionID) {
-                CommandEditorView(command: binding)
+                CommandEditorView(command: binding) {
+                    store.remove(binding.wrappedValue)
+                    self.selectionID = nil
+                }
             } else {
                 Text("Select a command")
                     .foregroundStyle(.secondary)
@@ -101,11 +99,5 @@ struct CommandListView: View {
     private func duplicateSelection() {
         guard let selectionID, let command = store.command(withID: selectionID) else { return }
         self.selectionID = store.duplicate(command).id
-    }
-
-    private func removeSelection() {
-        guard let selectionID, let command = store.command(withID: selectionID) else { return }
-        store.remove(command)
-        self.selectionID = nil
     }
 }

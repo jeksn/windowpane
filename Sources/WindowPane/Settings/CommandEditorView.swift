@@ -4,6 +4,9 @@ import KeyboardShortcuts
 
 struct CommandEditorView: View {
     @Binding var command: WindowCommand
+    var onDelete: (() -> Void)?
+
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         Form {
@@ -25,8 +28,29 @@ struct CommandEditorView: View {
                 PreviewDiagram(command: command)
                     .frame(height: 170)
             }
+            if !command.isDefault {
+                Section("Danger Zone") {
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Text("Delete Command…")
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
+        .confirmationDialog(
+            "Delete \"\(command.name)\"?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                onDelete?()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This command and its hotkey will be removed. This cannot be undone.")
+        }
     }
     private func offsetBinding(_ keyPath: WritableKeyPath<WindowCommand, WindowDimension>) -> Binding<WindowDimension?> {
         Binding<WindowDimension?>(
