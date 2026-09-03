@@ -54,6 +54,9 @@ struct MenuContent: View {
             PickerController.shared.show()
         }
         Divider()
+        Button("Check for Updates…") {
+            UpdateChecker.checkForUpdates()
+        }
         Button("Settings…") {
             openSettingsWindow()
         }

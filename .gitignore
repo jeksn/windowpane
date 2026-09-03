@@ -1,5 +1,6 @@
 .build/
 WindowPane.app/
+dist/
 *.xcodeproj
 .DS_Store
 .swiftpm

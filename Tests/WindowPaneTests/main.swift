@@ -6,6 +6,7 @@ LayoutEngineTests.runAll(runner)
 WindowCommandCodableTests.runAll(runner)
 URLParsingTests.runAll(runner)
 FuzzyMatchTests.runAll(runner)
+VersionCompareTests.runAll(runner)
 
 print()
 print(runner.summary)

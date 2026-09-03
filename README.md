@@ -15,6 +15,7 @@ Resize and move the focused window into any layout you define — halves, thirds
 - **Edge gap** — keep windows off the screen edges
 - **URL scheme** — apply commands from scripts, shells, or other apps
 - **Launch at login**
+- **Check for Updates** — in-app updater that downloads and installs new releases from GitHub
 - Native SwiftUI menu-bar app (no Dock icon, ~zero footprint)
 
 ## Requirements
@@ -70,9 +71,14 @@ open "windowpane://command?position=center&relativeWidth=0.5&relativeHeight=0.5"
 
 ## Updating
 
-```bash
-Scripts/update.sh   # release build → install to /Applications → relaunch
-```
+- In-app: menu bar icon → **Check for Updates…** — downloads and installs the latest release
+- From source: `Scripts/update.sh` (release build → install to /Applications → relaunch)
+
+## Releases
+
+Releases are automated: pushing a `v*` tag (e.g. `v0.1.0`) runs the GitHub
+Actions workflow, which tests, builds, and attaches a signed DMG to the
+release. The app's version comes from the tag.
 
 ## Icons
 

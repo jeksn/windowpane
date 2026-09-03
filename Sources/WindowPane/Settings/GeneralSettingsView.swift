@@ -35,6 +35,7 @@ struct GeneralSettingsView: View {
                 Text("Parameterless actions — they keep the window's size and only change its position. Also available in the Quick Picker.")
             }
             Section("System") {
+                LabeledContent("Version", value: UpdateChecker.currentVersion)
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { enabled in
                         do {

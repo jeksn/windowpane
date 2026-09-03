@@ -5,7 +5,7 @@ CONFIG="${1:-release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="WindowPane"
 BUNDLE_ID="com.windowpane.app"
-VERSION="0.1.0"
+VERSION="$(git -C "$ROOT" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")"
 
 cd "$ROOT"
 swift build -c "$CONFIG"

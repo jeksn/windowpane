@@ -7,9 +7,10 @@ macOS menu-bar utility that applies user-defined window sizes/positions to the f
 ```bash
 swift build                  # debug build (app + tests)
 swift run WindowPaneTests    # run the test harness (exits non-zero on failure)
-Scripts/package_app.sh       # release build + WindowPane.app bundle (ad-hoc signed)
+Scripts/package_app.sh       # release build + WindowPane.app bundle (version from latest git tag)
 Scripts/dev.sh               # debug build + bundle + relaunch app
 Scripts/update.sh            # release build + install to /Applications + relaunch
+Scripts/make_dmg.sh          # release build + drag-to-Applications DMG in dist/
 Scripts/install.sh [--force] # copy WindowPane.app to /Applications
 ```
 
@@ -21,6 +22,8 @@ There is no `swift test` workflow: this machine has Command Line Tools only (no 
 - `Sources/WindowPane/` — app target: AX layer (`Accessibility`, `WindowManipulator`), `CommandApplier` (+ `RestoreStore`), `CommandStore` (versioned JSON at `~/Library/Application Support/WindowPane/commands.json`; v2 = `{version, commands}`, legacy bare arrays migrate via `WindowCommand.migratingLegacyCommands`, which preserves IDs of name-matched commands so hotkeys survive), `HotkeyManager`, menu bar + settings UI, `PickerController`/`PickerView` (Spotlight-style overlay), `HUD` feedback, `URLDispatcher`.
 - Commands carry `isDefault` (seeds; sidebar "Defaults" section, restorable via `restoreDefaults()`) and `showInMenuBar` (menu bar only lists pinned commands; toggle in the editor, indicator in the sidebar). New custom commands are pinned by default.
 - **Actions** (`WindowAction` in Core): parameterless fixed built-ins (Center, Move Left/Right/Up/Down) that are NOT commands — they keep the window size and only reposition. Hotkeys live in General settings under fixed names `action.<id>` (registered in `HotkeyManager`), they're excluded from the commands list/store, but included in the Quick Picker via `PickerItem`. Store migrations drop action-named commands and remap their recorded hotkeys (`remapActionHotkeys`).
+- **Updates**: `UpdateChecker` (app target) queries `https://api.github.com/repos/jeksn/windowpane/releases/latest` — **update the `repo` constant when the GitHub repo is created/renamed**. Compares via `VersionCompare` (Core), offers download-and-install (DMG asset → hdiutil → copy to /Applications → relaunch) or opening the release page. Bundle version comes from the latest git tag (`package_app.sh`), so tag releases `vX.Y.Z`.
+- **CI**: `.github/workflows/release.yml` builds/tests/DMGs on `v*` tag push and attaches the DMG to a GitHub Release (ad-hoc signed; notarization secrets are a future step).
 - `Tests/WindowPaneTests/` — custom harness (`TestRunner` + suite files + `main.swift`).
 
 ## Notes / gotchas
