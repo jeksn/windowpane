@@ -1,0 +1,73 @@
+import WindowPaneCore
+import AppKit
+
+final class CommandApplier {
+    static let shared = CommandApplier()
+
+    private let restoreStore = RestoreStore.shared
+
+    func apply(_ command: WindowCommand, target: WindowRef? = nil) {
+        guard Accessibility.ensureTrusted(prompt: true) else {
+            HUD.show("Enable Accessibility in System Settings")
+            return
+        }
+        guard let target = target ?? WindowManipulator.frontmostWindow() else {
+            HUD.show("No focused window")
+            return
+        }
+        guard let currentFrame = WindowManipulator.frame(of: target.window) else {
+            HUD.show("Could not read window geometry")
+            return
+        }
+        guard let screen = WindowManipulator.screen(containing: currentFrame) else {
+            HUD.show("Could not detect display")
+            return
+        }
+
+        let usable = LayoutEngine.usableArea(in: screen.visibleFrame, gap: CGFloat(AppSettings.gap))
+        let newFrame = LayoutEngine.frame(for: LayoutEngine.Request(
+            usableArea: usable,
+            currentFrame: currentFrame,
+            width: command.width,
+            height: command.height,
+            anchor: command.anchor,
+            offsetX: command.offsetX,
+            offsetY: command.offsetY
+        ))
+
+        restoreStore.record(key: target.restoreKey, frame: currentFrame)
+
+        if let error = WindowManipulator.setFrame(target, to: newFrame) {
+            HUD.show("Could not resize window (\(error.rawValue))")
+        } else {
+            HUD.show(command.name.isEmpty ? "Applied" : "Applied: \(command.name)")
+        }
+    }
+
+    func restore(target: WindowRef? = nil) {
+        guard Accessibility.ensureTrusted(prompt: true) else {
+            HUD.show("Enable Accessibility in System Settings")
+            return
+        }
+        guard let target = target ?? WindowManipulator.frontmostWindow() else {
+            HUD.show("No focused window")
+            return
+        }
+        guard let currentFrame = WindowManipulator.frame(of: target.window) else {
+            HUD.show("Could not read window geometry")
+            return
+        }
+        guard let previousFrame = restoreStore.frame(for: target.restoreKey) else {
+            HUD.show("Nothing to restore")
+            return
+        }
+
+        restoreStore.record(key: target.restoreKey, frame: currentFrame)
+
+        if let error = WindowManipulator.setFrame(target, to: previousFrame) {
+            HUD.show("Could not restore window (\(error.rawValue))")
+        } else {
+            HUD.show("Restored")
+        }
+    }
+}

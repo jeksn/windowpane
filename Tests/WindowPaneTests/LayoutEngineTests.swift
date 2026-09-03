@@ -1,0 +1,99 @@
+import CoreGraphics
+import WindowPaneCore
+
+enum LayoutEngineTests {
+    static func runAll(_ t: TestRunner) {
+        let area = CGRect(x: 0, y: 0, width: 1000, height: 700)
+
+        func frame(
+            width: WindowDimension?,
+            height: WindowDimension?,
+            anchor: Anchor,
+            offsetX: WindowDimension = .percent(0),
+            offsetY: WindowDimension = .percent(0),
+            usable: CGRect? = nil,
+            current: CGRect = .zero
+        ) -> CGRect {
+            LayoutEngine.frame(for: LayoutEngine.Request(
+                usableArea: usable ?? area,
+                currentFrame: current,
+                width: width,
+                height: height,
+                anchor: anchor,
+                offsetX: offsetX,
+                offsetY: offsetY
+            ))
+        }
+
+        t.run("LayoutEngine.leftHalf") {
+            let result = frame(width: .percent(50), height: .percent(100), anchor: .topLeft)
+            t.check(result == CGRect(x: 0, y: 0, width: 500, height: 700), "got \(result)")
+        }
+
+        t.run("LayoutEngine.rightHalf") {
+            let result = frame(width: .percent(50), height: .percent(100), anchor: .topRight)
+            t.check(result == CGRect(x: 500, y: 0, width: 500, height: 700), "got \(result)")
+        }
+
+        t.run("LayoutEngine.centerPercent") {
+            let result = frame(width: .percent(60), height: .percent(60), anchor: .center)
+            t.check(result == CGRect(x: 200, y: 140, width: 600, height: 420), "got \(result)")
+        }
+
+        t.run("LayoutEngine.pointsSize") {
+            let result = frame(width: .points(400), height: .points(300), anchor: .topLeft)
+            t.check(result == CGRect(x: 0, y: 400, width: 400, height: 300), "got \(result)")
+        }
+
+        t.run("LayoutEngine.negativePercentOffsetShiftsLeft") {
+            let result = frame(width: .percent(50), height: .percent(100), anchor: .topLeft, offsetX: .percent(-10))
+            t.check(result == CGRect(x: -100, y: 0, width: 500, height: 700), "got \(result)")
+        }
+
+        t.run("LayoutEngine.positivePointsOffsets") {
+            let result = frame(width: .percent(50), height: .percent(100), anchor: .topLeft, offsetX: .points(25), offsetY: .points(10))
+            t.check(result == CGRect(x: 25, y: -10, width: 500, height: 700), "got \(result)")
+        }
+
+        t.run("LayoutEngine.bottomAnchor") {
+            let result = frame(width: .percent(100), height: .percent(50), anchor: .bottomLeft)
+            t.check(result == CGRect(x: 0, y: 0, width: 1000, height: 350), "got \(result)")
+        }
+
+        t.run("LayoutEngine.middleLeftAnchor") {
+            let result = frame(width: .percent(50), height: .percent(50), anchor: .middleLeft)
+            t.check(result == CGRect(x: 0, y: 175, width: 500, height: 350), "got \(result)")
+        }
+
+        t.run("LayoutEngine.keepsCurrentSizeWhenNil") {
+            let current = CGRect(x: 100, y: 100, width: 300, height: 200)
+            let result = frame(width: nil, height: nil, anchor: .center, current: current)
+            t.check(result.width == 300, "width \(result.width)")
+            t.check(result.height == 200, "height \(result.height)")
+            t.check(result.midX == 500, "midX \(result.midX)")
+            t.check(result.midY == 350, "midY \(result.midY)")
+        }
+
+        t.run("LayoutEngine.gapInsetsUsableArea") {
+            t.check(LayoutEngine.usableArea(in: area, gap: 10) == CGRect(x: 10, y: 10, width: 980, height: 680), "gap inset mismatch")
+        }
+
+        t.run("LayoutEngine.percentSizesRelativeToGapInsetArea") {
+            let usable = LayoutEngine.usableArea(in: area, gap: 10)
+            let result = frame(width: .percent(50), height: .percent(100), anchor: .topLeft, usable: usable)
+            t.check(result == CGRect(x: 10, y: 10, width: 490, height: 680), "got \(result)")
+        }
+
+        t.run("LayoutEngine.zeroGapReturnsVisibleFrameUnchanged") {
+            t.check(LayoutEngine.usableArea(in: area, gap: 0) == area, "zero gap changed the frame")
+        }
+
+        t.run("LayoutEngine.negativeSizeClampedToZero") {
+            t.check(frame(width: .points(-50), height: .percent(50), anchor: .topLeft).width == 0, "negative width not clamped")
+        }
+
+        t.run("LayoutEngine.offsetBeyondScreenIsAllowed") {
+            t.check(frame(width: .percent(50), height: .percent(100), anchor: .topLeft, offsetX: .percent(100)).minX == 1000, "offset clamped unexpectedly")
+        }
+    }
+}

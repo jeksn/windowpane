@@ -1,0 +1,119 @@
+import AppKit
+import ApplicationServices
+import Darwin
+
+struct WindowRef {
+    let pid: pid_t
+    let app: AXUIElement
+    let window: AXUIElement
+    let windowID: CGWindowID?
+    let title: String?
+
+    var restoreKey: String {
+        if let windowID { return "cg:\(windowID)" }
+        return "fb:\(pid)-\(title ?? "untitled")"
+    }
+}
+
+enum WindowManipulator {
+    private static let getWindowID: (@convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError)? = {
+        guard let handle = dlopen("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices", RTLD_LAZY) else { return nil }
+        guard let symbol = dlsym(handle, "_AXUIElementGetWindow") else { return nil }
+        return unsafeBitCast(symbol, to: (@convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError).self)
+    }()
+
+    static func frontmostWindow() -> WindowRef? {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        if app.bundleIdentifier == Bundle.main.bundleIdentifier { return nil }
+        return window(ofProcess: app.processIdentifier)
+    }
+
+    static func window(ofProcess pid: pid_t) -> WindowRef? {
+        let app = AXUIElementCreateApplication(pid)
+        var result: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute as CFString, &result)
+        guard error == .success, let window = result else { return nil }
+        return makeRef(pid: pid, app: app, window: window as! AXUIElement)
+    }
+
+    private static func makeRef(pid: pid_t, app: AXUIElement, window: AXUIElement) -> WindowRef {
+        var windowID: CGWindowID?
+        if let getWindowID {
+            var id = CGWindowID(0)
+            if getWindowID(window, &id) == .success { windowID = id }
+        }
+
+        var title: String?
+        var titleValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleValue) == .success {
+            title = titleValue as? String
+        }
+
+        return WindowRef(pid: pid, app: app, window: window, windowID: windowID, title: title)
+    }
+
+    static func frame(of window: AXUIElement) -> CGRect? {
+        var positionValue: CFTypeRef?
+        var sizeValue: CFTypeRef?
+        guard
+            AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &positionValue) == .success,
+            AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeValue) == .success,
+            let position = positionValue,
+            let size = sizeValue
+        else { return nil }
+
+        var point = CGPoint.zero
+        var cgSize = CGSize.zero
+        guard
+            AXValueGetValue(position as! AXValue, .cgPoint, &point),
+            AXValueGetValue(size as! AXValue, .cgSize, &cgSize)
+        else { return nil }
+
+        return CGRect(origin: cocoaOrigin(fromAXTopLeft: point, height: cgSize.height), size: cgSize)
+    }
+
+    @discardableResult
+    static func setFrame(_ ref: WindowRef, to frame: CGRect) -> AXError? {
+        var size = CGSize(width: frame.width, height: frame.height)
+        var point = axTopLeft(fromCocoaOrigin: frame.origin, height: frame.height)
+        guard
+            let sizeValue = AXValueCreate(.cgSize, &size),
+            let pointValue = AXValueCreate(.cgPoint, &point)
+        else { return .failure }
+
+        let sizeError = AXUIElementSetAttributeValue(ref.window, kAXSizeAttribute as CFString, sizeValue)
+        guard sizeError == .success else { return sizeError }
+
+        let positionError = AXUIElementSetAttributeValue(ref.window, kAXPositionAttribute as CFString, pointValue)
+        guard positionError == .success else { return positionError }
+        return nil
+    }
+
+    static func screen(containing frame: CGRect) -> NSScreen? {
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        if let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) {
+            return screen
+        }
+
+        let best = NSScreen.screens
+            .compactMap { screen -> (NSScreen, CGFloat)? in
+                let intersection = screen.frame.intersection(frame)
+                guard !intersection.isNull else { return nil }
+                return (screen, intersection.width * intersection.height)
+            }
+            .max { $0.1 < $1.1 }
+        return best?.0 ?? NSScreen.main
+    }
+
+    static func cocoaOrigin(fromAXTopLeft point: CGPoint, height: CGFloat) -> CGPoint {
+        CGPoint(x: point.x, y: primaryScreenHeight - point.y - height)
+    }
+
+    static func axTopLeft(fromCocoaOrigin origin: CGPoint, height: CGFloat) -> CGPoint {
+        CGPoint(x: origin.x, y: primaryScreenHeight - origin.y - height)
+    }
+
+    private static var primaryScreenHeight: CGFloat {
+        NSScreen.screens.first?.frame.height ?? 0
+    }
+}
