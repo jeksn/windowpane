@@ -47,7 +47,7 @@ struct GeneralSettingsView: View {
                     Spacer()
                     Button("Refresh") { isTrusted = Accessibility.isTrusted }
                     Button("Open System Settings") {
-                        NSWorkspace.shared.open(Accessibility.systemSettingsURL)
+                        Accessibility.openSystemSettings()
                     }
                 }
             }

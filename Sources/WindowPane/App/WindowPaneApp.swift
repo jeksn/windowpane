@@ -26,7 +26,7 @@ struct MenuContent: View {
     var body: some View {
         if !Accessibility.isTrusted {
             Button("Enable Accessibility Permission…") {
-                NSWorkspace.shared.open(Accessibility.systemSettingsURL)
+                Accessibility.openSystemSettings()
             }
             Divider()
         }
