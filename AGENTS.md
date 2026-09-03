@@ -9,6 +9,7 @@ swift build                  # debug build (app + tests)
 swift run WindowPaneTests    # run the test harness (exits non-zero on failure)
 Scripts/package_app.sh       # release build + WindowPane.app bundle (ad-hoc signed)
 Scripts/dev.sh               # debug build + bundle + relaunch app
+Scripts/update.sh            # release build + install to /Applications + relaunch
 Scripts/install.sh [--force] # copy WindowPane.app to /Applications
 ```
 

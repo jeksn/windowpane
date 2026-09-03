@@ -7,63 +7,57 @@ struct CommandListView: View {
     @State private var selectionID: UUID?
 
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(spacing: 0) {
-                HStack(spacing: 10) {
-                    Text("Commands")
-                        .font(.headline)
-                    Spacer()
+        NavigationSplitView {
+            List(selection: $selectionID) {
+                Section("Custom") {
+                    ForEach(store.customCommands) { command in
+                        row(for: command)
+                    }
+                    .onMove { store.moveCustom(from: $0, to: $1) }
+                }
+                Section {
+                    ForEach(store.defaultCommands) { command in
+                        row(for: command)
+                    }
+                } header: {
+                    HStack {
+                        Text("Defaults")
+                        Spacer()
+                        Button("Restore Defaults") {
+                            store.restoreDefaults()
+                        }
+                        .buttonStyle(.borderless)
+                        .font(.caption)
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
                     Button {
                         addCommand()
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .help("Add command")
                     Button {
                         duplicateSelection()
                     } label: {
                         Image(systemName: "doc.on.doc")
                     }
                     .disabled(selectionID == nil)
+                    .help("Duplicate command")
                     Button {
                         removeSelection()
                     } label: {
                         Image(systemName: "minus")
                     }
                     .disabled(selectionID == nil)
+                    .help("Delete command")
                 }
-                .buttonStyle(.borderless)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-
-                List(selection: $selectionID) {
-                    Section {
-                        ForEach(store.defaultCommands) { command in
-                            row(for: command)
-                        }
-                    } header: {
-                        HStack {
-                            Text("Defaults")
-                            Spacer()
-                            Button("Restore Defaults") {
-                                store.restoreDefaults()
-                            }
-                            .buttonStyle(.borderless)
-                            .font(.caption)
-                        }
-                    }
-                    Section("Custom") {
-                        ForEach(store.customCommands) { command in
-                            row(for: command)
-                        }
-                        .onMove { store.moveCustom(from: $0, to: $1) }
-                    }
-                }
-                .listStyle(.sidebar)
             }
-            .frame(width: 260)
-
-            Divider()
-
+        } detail: {
             if let selectionID, let binding = store.binding(for: selectionID) {
                 CommandEditorView(command: binding)
             } else {
@@ -85,15 +79,11 @@ struct CommandListView: View {
                     .help("Shown in menu bar")
             }
             if let shortcut = KeyboardShortcuts.getShortcut(for: HotkeyManager.name(for: command.id)) {
-                Text(shortcutDescription(shortcut))
+                Text(shortcut.description)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private func shortcutDescription(_ shortcut: KeyboardShortcuts.Shortcut) -> String {
-        shortcut.description
     }
 
     private func addCommand() {
