@@ -17,8 +17,25 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$BIN_PATH/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
 for bundle in "$BIN_PATH"/*.bundle; do
-  [[ -e "$bundle" ]] && cp -R "$bundle" "$APP_BUNDLE/Contents/Resources/"
+  [[ -e "$bundle" ]] || continue
+  cp -R "$bundle" "$APP_BUNDLE/Contents/Resources/"
 done
+
+python3 - "$APP_BUNDLE/Contents/MacOS/$APP_NAME" "$BIN_PATH" "$APP_BUNDLE/Contents/Resources" <<'PY'
+import re, sys
+bin_path, bin_dir, resources = sys.argv[1], sys.argv[2].rstrip('/'), sys.argv[3]
+data = bytearray(open(bin_path, 'rb').read())
+patched = 0
+for m in re.finditer(re.escape(bin_dir.encode()) + rb'/[A-Za-z0-9_]+_[A-Za-z0-9_]+\.bundle', data):
+    old = m.group(0)
+    name = old.rsplit(b'/', 1)[-1]
+    new = resources.encode() + b'/' + name
+    new += b'/' * (len(old) - len(new))
+    data[m.start():m.end()] = new
+    patched += 1
+open(bin_path, 'wb').write(data)
+print(f'patched {patched} resource bundle path(s)')
+PY
 
 ICON_KEY=""
 if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
