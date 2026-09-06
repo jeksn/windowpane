@@ -21,9 +21,10 @@ for bundle in "$BIN_PATH"/*.bundle; do
   cp -R "$bundle" "$APP_BUNDLE/Contents/Resources/"
 done
 
-python3 - "$APP_BUNDLE/Contents/MacOS/$APP_NAME" "$BIN_PATH" "$APP_BUNDLE/Contents/Resources" <<'PY'
+python3 - "$APP_BUNDLE/Contents/MacOS/$APP_NAME" "$BIN_PATH" <<'PY'
 import re, sys
-bin_path, bin_dir, resources = sys.argv[1], sys.argv[2].rstrip('/'), sys.argv[3]
+bin_path, bin_dir = sys.argv[1], sys.argv[2].rstrip('/')
+resources = "/Applications/WindowPane.app/Contents/Resources"
 data = bytearray(open(bin_path, 'rb').read())
 patched = 0
 for m in re.finditer(re.escape(bin_dir.encode()) + rb'/[A-Za-z0-9_]+_[A-Za-z0-9_]+\.bundle', data):
