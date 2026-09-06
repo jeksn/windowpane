@@ -10,11 +10,15 @@ VERSION="$(git -C "$ROOT" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' 
 cd "$ROOT"
 swift build -c "$CONFIG"
 
-BIN_PATH="$(swift build --show-bin-path -c "$CONFIG")/$APP_NAME"
+BIN_PATH="$(swift build --show-bin-path -c "$CONFIG")"
 APP_BUNDLE="$ROOT/$APP_NAME.app"
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
-cp "$BIN_PATH" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+cp "$BIN_PATH/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+
+for bundle in "$BIN_PATH"/*.bundle; do
+  [[ -e "$bundle" ]] && cp -R "$bundle" "$APP_BUNDLE/Contents/Resources/"
+done
 
 ICON_KEY=""
 if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then

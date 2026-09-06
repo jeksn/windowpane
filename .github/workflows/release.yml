@@ -19,6 +19,25 @@ jobs:
       - name: Run tests
         run: swift run WindowPaneTests
 
+      - name: Import signing certificate
+        env:
+          MACOS_SIGNING_P12: ${{ secrets.MACOS_SIGNING_P12 }}
+          MACOS_SIGNING_PASSWORD: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_SIGNING_P12" ]; then
+            echo "MACOS_SIGNING_P12 secret not set - building ad-hoc (Accessibility grant resets per update)"
+            exit 0
+          fi
+          echo "$MACOS_SIGNING_P12" | base64 --decode > /tmp/cert.p12
+          security create-keychain -p ci-build build.keychain
+          security import /tmp/cert.p12 -k build.keychain -P "$MACOS_SIGNING_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci-build build.keychain
+          security unlock-keychain -p ci-build build.keychain
+          security list-keychains -s build.keychain $(security list-keychains | sed 's/"//g' | tr -d ' ')
+          security find-identity -v -p codesigning
+          echo "CODESIGN_IDENTITY=WindowPane Dev" >> "$GITHUB_ENV"
+          rm /tmp/cert.p12
+
       - name: Build app bundle
         run: Scripts/package_app.sh
 
