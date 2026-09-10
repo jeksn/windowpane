@@ -5,7 +5,6 @@ import WindowPaneCore
 struct AppShortcutListView: View {
     @EnvironmentObject private var store: AppShortcutStore
     @State private var selectionID: UUID?
-    @State private var showingChooser = false
 
     var body: some View {
         NavigationSplitView {
@@ -23,11 +22,12 @@ struct AppShortcutListView: View {
                 ToolbarItem {
                     HStack(spacing: 8) {
                         Button {
-                            showingChooser = true
+                            let shortcut = store.add(AppShortcut())
+                            selectionID = shortcut.id
                         } label: {
                             Image(systemName: "plus")
                         }
-                        .help("Add app shortcut")
+                        .help("Add shortcut")
                         Button {
                             duplicateSelection()
                         } label: {
@@ -45,23 +45,32 @@ struct AppShortcutListView: View {
                     self.selectionID = nil
                 }
             } else {
-                Text("Select an app shortcut")
+                Text("Select a shortcut")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .sheet(isPresented: $showingChooser) {
-            AppChooserView { item in
-                let shortcut = store.add(item.appShortcut)
-                selectionID = shortcut.id
             }
         }
     }
 
     private func row(for shortcut: AppShortcut) -> some View {
         HStack {
-            Text(shortcut.name.isEmpty ? "Untitled" : shortcut.name)
-                .lineLimit(1)
+            Image(systemName: shortcut.isURL ? "link" : "arrow.right.square")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(shortcut.name.isEmpty ? "Untitled" : shortcut.name)
+                    .lineLimit(1)
+                if shortcut.isURL, let urlString = shortcut.urlString, !urlString.isEmpty {
+                    Text(urlString)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if !shortcut.isURL, let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty {
+                    Text(bundleID)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
             Spacer()
             if let shortcut = KeyboardShortcuts.getShortcut(for: HotkeyManager.appJumpName(for: shortcut.id)) {
                 Text(shortcut.description)

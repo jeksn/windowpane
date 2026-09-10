@@ -12,28 +12,56 @@ struct AppShortcutEditorView: View {
 
     var body: some View {
         Form {
-            Section("App") {
-                HStack(spacing: 12) {
-                    appIcon
-                        .frame(width: 32, height: 32)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(shortcut.name.isEmpty ? "No app selected" : shortcut.name)
+            Section("Shortcut") {
+                TextField("Name", text: $shortcut.name)
+
+                Picker("Kind", selection: $shortcut.isURL) {
+                    Text("App").tag(false)
+                    Text("URL / Link").tag(true)
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if shortcut.isURL {
+                Section("URL") {
+                    TextField("URL", text: urlStringBinding)
+                        .textFieldStyle(.roundedBorder)
+                    if let url = shortcut.url {
+                        Text(url.absoluteString)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
-                        if let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty {
-                            Text(bundleID)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
+                    } else if shortcut.urlString?.isEmpty == false {
+                        Text("Invalid URL")
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
-                    Spacer()
-                    Button("Choose…") { showingChooser = true }
+                }
+            } else {
+                Section("App") {
+                    HStack(spacing: 12) {
+                        appIcon
+                            .frame(width: 32, height: 32)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(shortcut.name.isEmpty ? "No app selected" : shortcut.name)
+                                .lineLimit(1)
+                            if let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty {
+                                Text(bundleID)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Spacer()
+                        Button("Choose…") { showingChooser = true }
+                    }
                 }
             }
-            Section("General") {
-                TextField("Name", text: $shortcut.name)
+
+            Section("Hotkey") {
                 KeyboardShortcuts.Recorder("Hotkey:", name: HotkeyManager.appJumpName(for: shortcut.id))
             }
+
             Section("Danger Zone") {
                 Button(role: .destructive) {
                     showingDeleteConfirmation = true
@@ -58,6 +86,15 @@ struct AppShortcutEditorView: View {
         } message: {
             Text("This shortcut and its hotkey will be removed. This cannot be undone.")
         }
+    }
+
+    private var urlStringBinding: Binding<String> {
+        Binding(
+            get: { shortcut.urlString ?? "" },
+            set: { newValue in
+                shortcut.urlString = newValue.isEmpty ? nil : newValue
+            }
+        )
     }
 
     private func chooseApp(_ item: AppChooserItem) {

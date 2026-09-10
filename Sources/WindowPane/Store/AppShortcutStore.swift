@@ -84,7 +84,19 @@ final class AppShortcutStore: ObservableObject {
     func activate(_ id: UUID) {
         guard let shortcut = appShortcut(withID: id) else { return }
         guard shortcut.isValid else {
-            Task { @MainActor in HUD.show("App shortcut is not valid") }
+            Task { @MainActor in HUD.show("Shortcut is not valid") }
+            return
+        }
+
+        if shortcut.isURL {
+            guard let url = shortcut.url else {
+                Task { @MainActor in HUD.show("Invalid URL") }
+                return
+            }
+            let ok = NSWorkspace.shared.open(url)
+            if !ok {
+                Task { @MainActor in HUD.show("Could not open URL") }
+            }
             return
         }
 

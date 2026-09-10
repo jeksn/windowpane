@@ -28,8 +28,8 @@ enum PickerItem: Identifiable {
         switch self {
         case .command:
             return "macwindow"
-        case .appShortcut:
-            return "arrow.right.square"
+        case .appShortcut(let shortcut, _):
+            return shortcut.isURL ? "link" : "arrow.right.square"
         }
     }
 }
