@@ -1,45 +1,42 @@
 import AppKit
-import CoreGraphics
+import ApplicationServices
 import Foundation
 
 enum WindowCycler {
-    private static let nextWindowSymbolicHotKeyID = "27"
-
     static func cycleNext() {
-        guard let targetPID = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return }
+        guard Accessibility.isTrusted else {
+            Accessibility.openSystemSettings()
+            return
+        }
 
-        let (keyCode, modifiers) = configuredNextWindowShortcut() ?? (CGKeyCode(50), CGEventFlags.maskCommand)
+        guard let app = NSWorkspace.shared.frontmostApplication else { return }
+        let pid = app.processIdentifier
 
-        let source = CGEventSource(stateID: .combinedSessionState)
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) else { return }
+        let axApp = AXUIElementCreateApplication(pid)
 
-        keyDown.flags = modifiers
-        keyUp.flags = modifiers
+        guard let windows = copyValue(axApp, for: kAXWindowsAttribute as CFString) as? [AXUIElement],
+              windows.count > 1 else { return }
 
-        keyDown.postToPid(targetPID)
-        usleep(1000)
-        keyUp.postToPid(targetPID)
+        let current = copyValue(axApp, for: kAXMainWindowAttribute as CFString) as! AXUIElement?
+
+        let currentIndex: Int
+        if let current = current {
+            currentIndex = windows.firstIndex { CFEqual($0, current) } ?? 0
+        } else {
+            currentIndex = 0
+        }
+
+        let nextIndex = (currentIndex + 1) % windows.count
+        let nextWindow = windows[nextIndex]
+
+        AXUIElementSetAttributeValue(axApp, kAXMainWindowAttribute as CFString, nextWindow)
+        AXUIElementPerformAction(nextWindow, kAXRaiseAction as CFString)
+        app.activate(options: [.activateAllWindows])
     }
 
-    private static func configuredNextWindowShortcut() -> (CGKeyCode, CGEventFlags)? {
-        guard let domain = UserDefaults.standard.persistentDomain(forName: "com.apple.symbolichotkeys"),
-              let hotKeys = domain["AppleSymbolicHotKeys"] as? [String: Any],
-              let entry = hotKeys[nextWindowSymbolicHotKeyID] as? [String: Any],
-              let enabled = entry["enabled"] as? Bool, enabled,
-              let value = entry["value"] as? [String: Any],
-              let parameters = value["parameters"] as? [Int],
-              parameters.count >= 3 else { return nil }
-
-        let keyCode = CGKeyCode(parameters[1])
-        let modifierMask = UInt64(parameters[2])
-
-        var flags: CGEventFlags = []
-        if modifierMask & 0x100000 != 0 { flags.insert(.maskCommand) }
-        if modifierMask & 0x080000 != 0 { flags.insert(.maskAlternate) }
-        if modifierMask & 0x040000 != 0 { flags.insert(.maskControl) }
-        if modifierMask & 0x020000 != 0 { flags.insert(.maskShift) }
-
-        return (keyCode, flags)
+    private static func copyValue(_ element: AXUIElement, for attribute: CFString) -> CFTypeRef? {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, attribute, &value)
+        return value
     }
 }
