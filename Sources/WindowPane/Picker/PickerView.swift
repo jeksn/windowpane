@@ -49,6 +49,7 @@ struct PickerView: View {
         }
         .frame(width: 560, height: 380)
         .background(.regularMaterial)
+        .ignoresSafeArea(edges: .top)
         .onAppear { isFocused = true }
         .onChange(of: viewModel.focusToken) { _ in isFocused = true }
         .onExitCommand { PickerController.shared.close() }
