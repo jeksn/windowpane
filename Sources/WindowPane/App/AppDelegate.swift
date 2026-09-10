@@ -3,6 +3,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         HotkeyManager.shared.registerAll(for: CommandStore.shared)
+        HotkeyManager.shared.registerAllAppJumps(for: AppShortcutStore.shared)
 
         NSAppleEventManager.shared().setEventHandler(
             self,

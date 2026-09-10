@@ -5,11 +5,13 @@ import SwiftUI
 struct WindowPaneApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = CommandStore.shared
+    @StateObject private var appShortcutStore = AppShortcutStore.shared
 
     var body: some Scene {
         MenuBarExtra {
             MenuContent()
                 .environmentObject(store)
+                .environmentObject(appShortcutStore)
         } label: {
             Image(nsImage: StatusBarIcon.image)
         }
@@ -18,6 +20,7 @@ struct WindowPaneApp: App {
         Window("WindowPane Settings", id: "settings") {
             SettingsView()
                 .environmentObject(store)
+                .environmentObject(appShortcutStore)
         }
         .windowResizability(.contentSize)
     }

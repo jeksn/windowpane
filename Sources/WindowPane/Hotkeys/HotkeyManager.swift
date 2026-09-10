@@ -9,6 +9,7 @@ final class HotkeyManager {
     static let openPicker = KeyboardShortcuts.Name("openQuickPicker")
 
     private var registeredCommandIDs = Set<UUID>()
+    private var registeredAppShortcutIDs = Set<UUID>()
     private var fixedNamesRegistered = false
 
     func registerAll(for store: CommandStore) {
@@ -26,6 +27,24 @@ final class HotkeyManager {
         }
         for action in WindowAction.all {
             register(action)
+        }
+    }
+
+    func registerAllAppJumps(for store: AppShortcutStore) {
+        for shortcut in store.shortcuts {
+            register(shortcut)
+        }
+    }
+
+    func register(_ shortcut: AppShortcut) {
+        guard !registeredAppShortcutIDs.contains(shortcut.id) else { return }
+        registeredAppShortcutIDs.insert(shortcut.id)
+
+        let id = shortcut.id
+        KeyboardShortcuts.onKeyUp(for: Self.appJumpName(for: id)) {
+            Task { @MainActor in
+                AppShortcutStore.shared.activate(id)
+            }
         }
     }
 
@@ -52,5 +71,9 @@ final class HotkeyManager {
 
     static func actionName(_ actionID: String) -> KeyboardShortcuts.Name {
         KeyboardShortcuts.Name("action.\(actionID)")
+    }
+
+    static func appJumpName(for id: UUID) -> KeyboardShortcuts.Name {
+        KeyboardShortcuts.Name("appjump.\(id.uuidString)")
     }
 }

@@ -29,19 +29,15 @@ final class PickerController: NSObject, NSWindowDelegate {
     }
 
     private func makeItems() -> [PickerItem] {
-        var items = CommandStore.shared.commands.map { command in
-            PickerItem(
-                title: command.name,
-                hotkeyName: HotkeyManager.name(for: command.id),
-                command: command
-            )
-        }
+        var items: [PickerItem] = []
+        items.append(contentsOf: CommandStore.shared.commands.map { command in
+            .command(command, hotkeyName: HotkeyManager.name(for: command.id))
+        })
         items.append(contentsOf: WindowAction.all.map { action in
-            PickerItem(
-                title: action.name,
-                hotkeyName: HotkeyManager.actionName(action.id),
-                command: action.command
-            )
+            .command(action.command, hotkeyName: HotkeyManager.actionName(action.id))
+        })
+        items.append(contentsOf: AppShortcutStore.shared.validShortcuts.map { shortcut in
+            .appShortcut(shortcut, hotkeyName: HotkeyManager.appJumpName(for: shortcut.id))
         })
         return items
     }
@@ -50,9 +46,15 @@ final class PickerController: NSObject, NSWindowDelegate {
         panel?.orderOut(nil)
     }
 
-    private func apply(_ command: WindowCommand) {
-        close()
-        CommandApplier.shared.apply(command, target: target ?? WindowManipulator.frontmostWindow())
+    private func handle(_ item: PickerItem) {
+        switch item {
+        case .command(let command, _):
+            close()
+            CommandApplier.shared.apply(command, target: target ?? WindowManipulator.frontmostWindow())
+        case .appShortcut(let shortcut, _):
+            close()
+            AppShortcutStore.shared.activate(shortcut.id)
+        }
     }
 
     private func ensurePanel() -> PickerPanel {
@@ -76,8 +78,8 @@ final class PickerController: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.delegate = self
         panel.contentView = NSHostingView(
-            rootView: PickerView(viewModel: viewModel) { [weak self] command in
-                self?.apply(command)
+            rootView: PickerView(viewModel: viewModel) { [weak self] item in
+                self?.handle(item)
             }
         )
         self.panel = panel
@@ -108,7 +110,7 @@ final class PickerController: NSObject, NSWindowDelegate {
                 return nil
             case 36, 76:
                 if let item = self.viewModel.selectedItem() {
-                    self.apply(item.command)
+                    self.handle(item)
                 }
                 return nil
             case 53:

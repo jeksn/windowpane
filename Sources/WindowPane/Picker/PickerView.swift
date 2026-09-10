@@ -4,7 +4,7 @@ import KeyboardShortcuts
 
 struct PickerView: View {
     @ObservedObject var viewModel: PickerViewModel
-    let onSelect: (WindowCommand) -> Void
+    let onSelect: (PickerItem) -> Void
 
     @FocusState private var isFocused: Bool
 
@@ -13,7 +13,7 @@ struct PickerView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Type a command name", text: $viewModel.query)
+                TextField("Type a command or app name", text: $viewModel.query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 17))
                     .focused($isFocused)
@@ -24,7 +24,7 @@ struct PickerView: View {
             Divider()
 
             if viewModel.filtered.isEmpty {
-                Text("No matching commands")
+                Text("No matching items")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -34,7 +34,7 @@ struct PickerView: View {
                             ForEach(viewModel.filtered) { item in
                                 PickerRowView(item: item, isSelected: item.id == viewModel.filtered[safe: viewModel.selectedIndex]?.id)
                                     .id(item.id)
-                                    .onTapGesture { onSelect(item.command) }
+                                    .onTapGesture { onSelect(item) }
                             }
                         }
                         .padding(.vertical, 4)
@@ -62,8 +62,9 @@ struct PickerRowView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "macwindow")
+            Image(systemName: item.icon)
                 .foregroundStyle(.secondary)
+                .frame(width: 18)
             Text(item.title.isEmpty ? "Untitled" : item.title)
                 .lineLimit(1)
             Spacer()

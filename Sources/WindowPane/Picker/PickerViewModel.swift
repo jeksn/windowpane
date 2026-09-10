@@ -2,12 +2,36 @@ import Foundation
 import KeyboardShortcuts
 import WindowPaneCore
 
-struct PickerItem: Identifiable {
-    let title: String
-    let hotkeyName: KeyboardShortcuts.Name
-    let command: WindowCommand
+enum PickerItem: Identifiable {
+    case command(WindowCommand, hotkeyName: KeyboardShortcuts.Name)
+    case appShortcut(AppShortcut, hotkeyName: KeyboardShortcuts.Name)
 
     var id: String { hotkeyName.rawValue }
+
+    var title: String {
+        switch self {
+        case .command(let command, _):
+            return command.name
+        case .appShortcut(let shortcut, _):
+            return shortcut.name
+        }
+    }
+
+    var hotkeyName: KeyboardShortcuts.Name {
+        switch self {
+        case .command(_, let name), .appShortcut(_, let name):
+            return name
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .command:
+            return "macwindow"
+        case .appShortcut:
+            return "arrow.right.square"
+        }
+    }
 }
 
 final class PickerViewModel: ObservableObject {
