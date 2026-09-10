@@ -24,6 +24,7 @@ struct GeneralSettingsView: View {
             Section("Hotkeys") {
                 KeyboardShortcuts.Recorder("Quick Picker:", name: HotkeyManager.openPicker)
                 KeyboardShortcuts.Recorder("Restore Previous Size:", name: HotkeyManager.restore)
+                KeyboardShortcuts.Recorder("Next Window:", name: HotkeyManager.nextWindow)
             }
             Section {
                 ForEach(WindowAction.all) { action in
