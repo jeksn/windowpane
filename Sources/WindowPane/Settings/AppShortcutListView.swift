@@ -54,18 +54,13 @@ struct AppShortcutListView: View {
 
     private func row(for shortcut: AppShortcut) -> some View {
         HStack {
-            Image(systemName: shortcut.isURL ? "link" : "arrow.right.square")
+            Image(systemName: icon(for: shortcut))
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(shortcut.name.isEmpty ? "Untitled" : shortcut.name)
                     .lineLimit(1)
-                if shortcut.isURL, let urlString = shortcut.urlString, !urlString.isEmpty {
-                    Text(urlString)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } else if !shortcut.isURL, let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty {
-                    Text(bundleID)
+                if let subtitle = subtitle(for: shortcut) {
+                    Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -77,6 +72,25 @@ struct AppShortcutListView: View {
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private func icon(for shortcut: AppShortcut) -> String {
+        switch shortcut.kind {
+        case .app: return "arrow.right.square"
+        case .url: return "link"
+        case .folder: return "folder"
+        }
+    }
+
+    private func subtitle(for shortcut: AppShortcut) -> String? {
+        switch shortcut.kind {
+        case .app:
+            return shortcut.bundleIdentifier
+        case .url:
+            return shortcut.urlString
+        case .folder:
+            return shortcut.folderURL?.path
         }
     }
 

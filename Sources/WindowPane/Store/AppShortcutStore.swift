@@ -88,7 +88,8 @@ final class AppShortcutStore: ObservableObject {
             return
         }
 
-        if shortcut.isURL {
+        switch shortcut.kind {
+        case .url:
             guard let url = shortcut.url else {
                 Task { @MainActor in HUD.show("Invalid URL") }
                 return
@@ -98,33 +99,45 @@ final class AppShortcutStore: ObservableObject {
                 Task { @MainActor in HUD.show("Could not open URL") }
             }
             return
-        }
 
-        let url: URL?
-        if let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty,
-           let resolved = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            url = resolved
-        } else if let bundleURL = shortcut.bundleURL {
-            url = bundleURL
-        } else {
-            url = nil
-        }
-
-        guard let appURL = url else {
-            Task { @MainActor in HUD.show("App not found") }
-            return
-        }
-
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        configuration.hides = false
-
-        NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { runningApp, error in
-            if let error {
-                Task { @MainActor in HUD.show(error.localizedDescription) }
+        case .folder:
+            guard let url = shortcut.folderURL else {
+                Task { @MainActor in HUD.show("No folder selected") }
                 return
             }
-            runningApp?.activate(options: [.activateAllWindows])
+            let ok = NSWorkspace.shared.open(url)
+            if !ok {
+                Task { @MainActor in HUD.show("Could not open folder") }
+            }
+            return
+
+        case .app:
+            let url: URL?
+            if let bundleID = shortcut.bundleIdentifier, !bundleID.isEmpty,
+               let resolved = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                url = resolved
+            } else if let bundleURL = shortcut.bundleURL {
+                url = bundleURL
+            } else {
+                url = nil
+            }
+
+            guard let appURL = url else {
+                Task { @MainActor in HUD.show("App not found") }
+                return
+            }
+
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = true
+            configuration.hides = false
+
+            NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { runningApp, error in
+                if let error {
+                    Task { @MainActor in HUD.show(error.localizedDescription) }
+                    return
+                }
+                runningApp?.activate(options: [.activateAllWindows])
+            }
         }
     }
 

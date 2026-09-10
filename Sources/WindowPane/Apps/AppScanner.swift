@@ -12,6 +12,7 @@ struct AppChooserItem: Identifiable, Hashable {
     var appShortcut: AppShortcut {
         AppShortcut(
             name: name,
+            kind: .app,
             bundleIdentifier: bundleIdentifier,
             bundleURL: bundleURL
         )
